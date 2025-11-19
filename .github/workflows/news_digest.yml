@@ -30,7 +30,7 @@ jobs:
     - name: Install Python dependencies
       run: |
         pip3 install --upgrade pip
-        pip3 install feedparser newspaper3k llama-cpp-python lxml_html_clean huggingface-hub
+        pip3 install -r requirements.txt
         
     - name: Create directories
       run: mkdir -p models
