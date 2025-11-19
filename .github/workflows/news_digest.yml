@@ -45,8 +45,17 @@ jobs:
     - name: Download Mistral model
       if: steps.cache-model.outputs.cache-hit != 'true'
       run: |
-        cd models
-        huggingface-cli download TheBloke/Mistral-7B-Instruct-v0.1-GGUF mistral-7b-instruct-v0.1.Q4_K_M.gguf --local-dir . --local-dir-use-symlinks False
+        python3 -c "
+        from huggingface_hub import hf_hub_download
+        import os
+        hf_hub_download(
+            repo_id='TheBloke/Mistral-7B-Instruct-v0.1-GGUF',
+            filename='mistral-7b-instruct-v0.1.Q4_K_M.gguf',
+            local_dir='./models',
+            local_dir_use_symlinks=False
+        )
+        print('✅ Model downloaded successfully')
+        "
       env:
         HF_HUB_DISABLE_PROGRESS_BARS: 1
         
@@ -62,9 +71,9 @@ jobs:
       run: python3 main.py
       env:
         MODEL_PATH: ./models/mistral-7b-instruct-v0.1.Q4_K_M.gguf
-        EMAIL_TO: ${{ secrets.EMAIL_TO }}
-        EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        EMAIL_TO: tanishchauhan4444@gmail.com
+        EMAIL_FROM: tanishchauhan4444@gmail.com
+        EMAIL_PASSWORD: "sexz mqmo ygov axxp"
         
     - name: Commit processed URLs
       run: |
