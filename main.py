@@ -21,38 +21,7 @@ FEEDS = {
     "US": {
         "CNN": "http://rss.cnn.com/rss/cnn_topstories.rss",
         "NPR": "https://feeds.npr.org/1001/rss.xml",
-        "Washington Post": "https://feeds.washingtonpost.com/rss/national",
-        "NY Times US": "https://rss.nytimes.com/services/xml/rss/nyt/US.xml",
-        "ABC Top": "https://feeds.abcnews.com/abcnews/topstories",
     },
-    "World": {
-        "BBC World": "http://feeds.bbci.co.uk/world/rss.xml",
-        "NY World": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
-        "Al Jazeera": "https://www.aljazeera.com/xml/rss/all.xml",
-    },
-    "Middle East": {
-        "NY Middle East": "https://rss.nytimes.com/services/xml/rss/nyt/MiddleEast.xml",
-    },
-    "Asia": {
-        "NY Asia Pacific": "https://rss.nytimes.com/services/xml/rss/nyt/AsiaPacific.xml",
-        "CNBC Asia": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=19832390",
-    },
-    "Europe": {
-        "NY Europe": "https://rss.nytimes.com/services/xml/rss/nyt/Europe.xml",
-        "CNBC EU": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=19794221",
-    },
-    "Africa": {
-        "NY Africa": "https://rss.nytimes.com/services/xml/rss/nyt/Africa.xml",
-    },
-    "Business": {
-        "CNBC Business": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10001147",
-        "NY Business": "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",
-        "WSJ Business": "https://feeds.content.dowjones.io/public/rss/WSJcomUSBusiness",
-    },
-    "Technology": {
-        "NY Tech": "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
-        "CNBC Tech": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=19854910",
-    }
 }
 
 # Initialize AI model
