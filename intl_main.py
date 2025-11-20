@@ -9,32 +9,50 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from llama_cpp import Llama
 
-# Configuration - NO ENVIRONMENT VARIABLES
+# Configuration
 MODEL_PATH = './models/mistral-7b-instruct-v0.1.Q4_K_M.gguf'
-PROCESSED_URLS_FILE = 'processed_urls.json'
+PROCESSED_URLS_FILE = 'intl_processed_urls.json'
 
-# Email Configuration - Add multiple recipients here
+# Email Configuration
 EMAIL_RECIPIENTS = [
     "tanishchauhan4444@gmail.com",
     "lakshith.toguta@gmail.com"
-    # Add more emails here
 ]
 EMAIL_FROM = "tanishchauhan4444@gmail.com"
 EMAIL_PASSWORD = "sexz mqmo ygov axxp"
 
-# RSS feeds organized by region
+# International RSS feeds
 FEEDS = {
-    "US": {
-        "NPR": "https://feeds.npr.org/1001/rss.xml",
-        "CNN": "http://rss.cnn.com/rss/cnn_topstories.rss",
-        "PBS NewsHour": "https://www.pbs.org/newshour/feeds/rss/headlines",
-        "Washington Post": "https://feeds.washingtonpost.com/rss/national",
-        "NY Times": "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
-        "ABC US Headlines": "https://feeds.abcnews.com/abcnews/usheadlines",
-        "CNBC Top News": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114", 
-        "CNBC US News": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=15837362", 
-        "The Hill": "https://thehill.com/homenews/feed/"
-    }
+    "World News": {
+        "BBC World": "http://feeds.bbci.co.uk/news/world/rss.xml",
+        "The Guardian International": "https://www.theguardian.com/world/rss",
+        "AP World News": "https://apnews.com/apf-topnews",
+        "ABC Intl Headlines": "https://feeds.abcnews.com/abcnews/internationalheadlines",            "CNBC World News": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100727362",
+        "CNBC World News": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100727362", 
+        "CNN": "http://rss.cnn.com/rss/cnn_world.rss"
+    },
+    "Europe": {
+        "BBC Europe": "http://feeds.bbci.co.uk/news/world/europe/rss.xml",
+        "France 24": "https://www.france24.com/en/europe/rss",
+        "Deutsche Welle": "https://rss.dw.com/rdf/rss-en-eu",
+    },
+    "Asia": {
+        "BBC Asia": "http://feeds.bbci.co.uk/news/world/asia/rss.xml",
+        "The Diplomat": "https://thediplomat.com/feed/",
+        "Nikkei Asia": "https://asia.nikkei.com/rss/feed/nar",
+    },
+    "Middle East": {
+        "BBC Middle East": "http://feeds.bbci.co.uk/news/world/middle_east/rss.xml",
+        "Middle East Monitor": "https://middleeastmnt.disqus.com/latest.rss",
+        "Middle East Eye": "https://www.middleeasteye.net/rss"
+    },
+    "Africa": {
+        "BBC Africa": "http://feeds.bbci.co.uk/news/world/africa/rss.xml",
+        "France 24": "https://www.france24.com/en/africa/rss"
+    },
+    "Latin America": {
+        "BBC Latin America": "http://feeds.bbci.co.uk/news/world/latin_america/rss.xml",
+        " Latin America Affairs RSS Feed": "http://latinamericanaffairs.blogspot.com/feeds/posts/default?alt=rss"     }
 }
 
 # Initialize AI model
@@ -48,13 +66,14 @@ llm = Llama(
     verbose=False
 )
 
-SUMMARY_PROMPT = """Analyze this news article and provide a concise summary in exactly this format:
+SUMMARY_PROMPT = """Analyze this international news article and provide a concise summary in exactly this format:
 
-WHO: [Key people/organizations involved]
+WHO: [Key people/organizations/countries involved]
 WHAT: [What happened]
 WHEN: [Time/date if mentioned]
-WHERE: [Location]
+WHERE: [Specific location/country/region]
 WHY: [Reason/context if available]
+GLOBAL IMPACT: [International implications or significance]
 
 Keep each point to 1-2 sentences maximum. Be specific and factual.
 
@@ -62,24 +81,25 @@ Article: {article}
 
 Summary:"""
 
-QUIZ_PROMPT = """Based on the news articles provided, create 5 multiple choice questions to test comprehension.
+QUIZ_PROMPT = """Based on the international news articles provided, create 5 multiple choice questions to test comprehension.
 
 STRICT REQUIREMENTS:
-- Create exactly 5 questions covering different articles
+- Create exactly 5 questions covering different international articles
 - Each question must have exactly 4 options (A, B, C, D)
 - Each question must have exactly 1 correct answer
 - Questions should test factual recall from the articles
 - Include a mix of WHO, WHAT, WHEN, WHERE, WHY questions
+- Focus on international/global content
 
 FORMAT (follow exactly):
-Q1. [Question about article content]
+Q1. [Question about international article content]
 A. [Option A]
 B. [Option B]
 C. [Option C]
 D. [Option D]
 Correct Answer: [Single letter: A, B, C, or D]
 
-Q2. [Question about article content]
+Q2. [Question about international article content]
 A. [Option A]
 B. [Option B]
 C. [Option C]
@@ -88,7 +108,7 @@ Correct Answer: [Single letter: A, B, C, or D]
 
 [Continue for Q3, Q4, Q5...]
 
-Articles Summary:
+International Articles Summary:
 {articles_summary}
 
 Generate exactly 5 questions now:"""
@@ -106,7 +126,7 @@ def save_processed_urls(urls):
         json.dump(list(urls), f)
 
 def collect_articles():
-    """Collect new articles from RSS feeds"""
+    """Collect new international articles from RSS feeds"""
     processed_urls = load_processed_urls()
     new_articles = []
     skipped_count = 0
@@ -114,13 +134,13 @@ def collect_articles():
     print(f"Loaded {len(processed_urls)} previously processed URLs")
     
     for region, feeds in FEEDS.items():
-        print(f"\n📰 Collecting from {region}...")
+        print(f"\n🌍 Collecting from {region}...")
         
         for feed_name, feed_url in feeds.items():
             try:
                 feed = feedparser.parse(feed_url)
                 
-                for entry in feed.entries[:10]:  # Limit per feed
+                for entry in feed.entries[:10]:
                     url = entry.link
                     
                     if url in processed_urls:
@@ -131,18 +151,15 @@ def collect_articles():
                         article.download()
                         article.parse()
                         
-                        # More strict content validation
                         word_count = len(article.text.split())
                         
-                        # Skip articles that are too short (less than 100 words)
                         if word_count < 100:
                             print(f"  ⏭️  Skipped (too short: {word_count} words): {entry.title[:50]}...")
                             skipped_count += 1
-                            processed_urls.add(url)  # Mark as processed so we don't retry
+                            processed_urls.add(url)
                             continue
                         
-                        # Skip articles with very little actual content
-                        if len(article.text.strip()) < 200:  # Less than 200 characters
+                        if len(article.text.strip()) < 200:
                             print(f"  ⏭️  Skipped (minimal content): {entry.title[:50]}...")
                             skipped_count += 1
                             processed_urls.add(url)
@@ -153,7 +170,7 @@ def collect_articles():
                             'source': feed_name,
                             'title': entry.title,
                             'url': url,
-                            'text': article.text[:3000]  # Limit length
+                            'text': article.text[:3000]
                         })
                         processed_urls.add(url)
                         print(f"  ✅ {feed_name}: {entry.title[:60]}... ({word_count} words)")
@@ -167,7 +184,7 @@ def collect_articles():
                 print(f"  ❌ Failed to process {feed_name}: {e}")
     
     save_processed_urls(processed_urls)
-    print(f"\n✅ Collected {len(new_articles)} new articles (skipped {skipped_count} short/empty articles)")
+    print(f"\n✅ Collected {len(new_articles)} new international articles (skipped {skipped_count} short/empty articles)")
     return new_articles
 
 def summarize_article(article_text):
@@ -177,7 +194,7 @@ def summarize_article(article_text):
         
         response = llm(
             prompt,
-            max_tokens=300,
+            max_tokens=350,
             temperature=0.3,
             top_p=0.9,
             stop=["Article:", "\n\nHere"],
@@ -186,7 +203,6 @@ def summarize_article(article_text):
         
         summary = response['choices'][0]['text'].strip()
         
-        # Ensure it has the required format
         if 'WHO:' in summary and 'WHAT:' in summary:
             return summary
         else:
@@ -197,16 +213,14 @@ def summarize_article(article_text):
         return None
 
 def generate_quiz(articles_by_region):
-    """Generate quiz questions based on all articles"""
+    """Generate quiz questions based on all international articles"""
     try:
-        # Prepare summary of all articles for quiz generation
         articles_summary = ""
         for region, articles in articles_by_region.items():
             for article in articles:
                 if article.get('summary'):
                     articles_summary += f"\nArticle: {article['title']}\n{article['summary']}\n"
         
-        # Limit length to avoid context issues
         articles_summary = articles_summary[:4000]
         
         prompt = QUIZ_PROMPT.format(articles_summary=articles_summary)
@@ -222,7 +236,6 @@ def generate_quiz(articles_by_region):
         
         quiz_text = response['choices'][0]['text'].strip()
         
-        # Parse the quiz into structured format
         questions = []
         current_q = {}
         
@@ -252,18 +265,15 @@ def generate_quiz(articles_by_region):
         return []
 
 def create_html_email(articles_by_region, quiz_questions):
-    """Create beautiful HTML email with summaries and quiz"""
+    """Create beautiful HTML email with international summaries and quiz"""
     
-    # Color scheme by region
     region_colors = {
-        "US": "#1e40af",
-        "World": "#059669", 
-        "Middle East": "#dc2626",
-        "Asia": "#9333ea",
+        "World News": "#2563eb",
         "Europe": "#0891b2",
+        "Asia": "#9333ea",
+        "Middle East": "#dc2626",
         "Africa": "#ea580c",
-        "Business": "#065f46",
-        "Technology": "#4f46e5"
+        "Latin America": "#059669"
     }
     
     html = f"""
@@ -282,7 +292,7 @@ def create_html_email(articles_by_region, quiz_questions):
                 background-color: #f9fafb;
             }}
             .header {{
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #2563eb 0%, #0891b2 100%);
                 color: white;
                 padding: 30px;
                 border-radius: 12px;
@@ -333,7 +343,7 @@ def create_html_email(articles_by_region, quiz_questions):
                 text-decoration: none;
             }}
             .article-title a:hover {{
-                color: #667eea;
+                color: #2563eb;
             }}
             .article-source {{
                 font-size: 13px;
@@ -354,7 +364,7 @@ def create_html_email(articles_by_region, quiz_questions):
                 color: #374151;
             }}
             .quiz-section {{
-                background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+                background: linear-gradient(135deg, #2563eb 0%, #9333ea 100%);
                 border-radius: 12px;
                 padding: 30px;
                 margin-top: 40px;
@@ -419,12 +429,11 @@ def create_html_email(articles_by_region, quiz_questions):
     </head>
     <body>
         <div class="header">
-            <h1>📰 Your News Digest</h1>
-            <p>{datetime.now().strftime('%B %d, %Y at %I:%M %p')}</p>
+            <h1>🌍 International News Digest</h1>
+            <p>{datetime.now().strftime('%B %d, %Y at %I:%M %p')} UTC</p>
         </div>
     """
     
-    # Add articles by region
     for region, articles in articles_by_region.items():
         if not articles:
             continue
@@ -459,12 +468,11 @@ def create_html_email(articles_by_region, quiz_questions):
         
         html += '</div>'
     
-    # Add quiz section
     if quiz_questions:
         html += """
         <div class="quiz-section">
-            <div class="quiz-header">🎯 Test Your Knowledge!</div>
-            <div class="quiz-subtitle">How well did you read today's news? Try these questions!</div>
+            <div class="quiz-header">🎯 Test Your Global Knowledge!</div>
+            <div class="quiz-subtitle">How well do you know what's happening around the world?</div>
         """
         
         for i, q in enumerate(quiz_questions, 1):
@@ -485,7 +493,7 @@ def create_html_email(articles_by_region, quiz_questions):
     
     html += """
         <div class="footer">
-            <p>Generated automatically every 4 hours • Powered by AI</p>
+            <p>🌍 Your automated international news digest • Powered by AI</p>
         </div>
     </body>
     </html>
@@ -500,20 +508,17 @@ def send_email(html_content, article_count):
     for recipient in EMAIL_RECIPIENTS:
         try:
             msg = MIMEMultipart('alternative')
-            msg['Subject'] = f'📰 News Digest - {article_count} New Articles - {datetime.now().strftime("%b %d, %Y")}'
+            msg['Subject'] = f'🌍 International News Digest - {article_count} New Articles - {datetime.now().strftime("%b %d, %Y")}'
             msg['From'] = EMAIL_FROM
             msg['To'] = recipient
             
-            # Add plain text fallback
-            plain_text = f"News Digest - {article_count} New Articles\n\nPlease view this email in an HTML-compatible email client."
+            plain_text = f"International News Digest - {article_count} New Articles\n\nPlease view this email in an HTML-compatible email client."
             text_part = MIMEText(plain_text, 'plain')
             msg.attach(text_part)
             
-            # Add HTML content
             html_part = MIMEText(html_content, 'html')
             msg.attach(html_part)
             
-            # Use SMTP with STARTTLS (port 587)
             with smtplib.SMTP('smtp.gmail.com', 587) as server:
                 server.ehlo()
                 server.starttls()
@@ -523,7 +528,7 @@ def send_email(html_content, article_count):
             
             print(f"✅ Email sent successfully to {recipient}")
             success_count += 1
-            sleep(1)  # Small delay between sends
+            sleep(1)
             
         except Exception as e:
             print(f"❌ Failed to send email to {recipient}: {e}")
@@ -532,20 +537,18 @@ def send_email(html_content, article_count):
     return success_count > 0
 
 def main():
-    """Main function to run the digest system"""
+    """Main function to run the international digest system"""
     print("=" * 60)
-    print(f"🚀 Starting News Digest - {datetime.now()}")
+    print(f"🌍 Starting International News Digest - {datetime.now()}")
     print("=" * 60)
     
-    # Step 1: Collect articles
     articles = collect_articles()
     
     if not articles:
-        print("\n📭 No new articles found. Exiting.")
+        print("\n📭 No new international articles found. Exiting.")
         return
     
-    # Step 2: Summarize articles
-    print(f"\n🤖 Summarizing {len(articles)} articles with AI...")
+    print(f"\n🤖 Summarizing {len(articles)} international articles with AI...")
     
     for i, article in enumerate(articles, 1):
         print(f"\n[{i}/{len(articles)}] {article['title'][:60]}...")
@@ -556,7 +559,6 @@ def main():
         else:
             print("  ⚠️ Summary failed")
     
-    # Step 3: Group by region
     articles_by_region = {}
     for article in articles:
         region = article['region']
@@ -564,7 +566,6 @@ def main():
             articles_by_region[region] = []
         articles_by_region[region].append(article)
     
-    # Step 4: Generate quiz questions
     print(f"\n🎯 Generating quiz questions...")
     quiz_questions = generate_quiz(articles_by_region)
     if quiz_questions:
@@ -572,14 +573,13 @@ def main():
     else:
         print(f"  ⚠️ Quiz generation failed")
     
-    # Step 5: Create and send email
     print(f"\n📧 Creating email...")
     html = create_html_email(articles_by_region, quiz_questions)
     
     print(f"📤 Sending email to {len(EMAIL_RECIPIENTS)} recipients...")
     send_email(html, len(articles))
     
-    print(f"\n✅ Complete! Processed {len(articles)} articles")
+    print(f"\n✅ Complete! Processed {len(articles)} international articles")
     print("=" * 60)
 
 if __name__ == "__main__":

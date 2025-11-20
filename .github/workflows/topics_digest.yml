@@ -1,0 +1,194 @@
+name: Topics News Digest Emailer
+on:
+  schedule:
+    # Run every 8 hours (at 0:00, 8:00, 16:00 UTC)
+    - cron: '0 0,8,16 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  send-topics-digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55 # Just under 1 hour limit
+    
+    steps:
+    - name: 📦 Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+    
+    - name: 🔧 Install system dependencies
+      run: |
+        echo "Installing build tools and dependencies..."
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake
+        echo "✅ System dependencies installed"
+    
+    - name: 📚 Install Python dependencies
+      run: |
+        echo "Upgrading pip..."
+        pip3 install --upgrade pip
+        echo "Installing Python packages from requirements.txt..."
+        pip3 install -r requirements.txt
+        echo "✅ Python dependencies installed"
+        echo ""
+        echo "Installed packages:"
+        pip3 list | grep -E "feedparser|newspaper|llama|huggingface"
+    
+    - name: 📁 Create directories
+      run: |
+        echo "Creating models directory..."
+        mkdir -p models
+        echo "✅ Directories created"
+        ls -la
+    
+    - name: 💾 Check for cached model
+      id: cache-model
+      uses: actions/cache@v4
+      with:
+        path: models/mistral-7b-instruct-v0.1.Q4_K_M.gguf
+        key: mistral-model-v1
+    
+    - name: ⬇️ Download Mistral model
+      if: steps.cache-model.outputs.cache-hit != 'true'
+      run: |
+        echo "🔄 Cache miss - downloading Mistral 7B model..."
+        echo "This will take ~5-10 minutes on first run..."
+        python3 -c "
+        from huggingface_hub import hf_hub_download
+        import os
+        print('Starting download from HuggingFace...')
+        hf_hub_download(
+            repo_id='TheBloke/Mistral-7B-Instruct-v0.1-GGUF',
+            filename='mistral-7b-instruct-v0.1.Q4_K_M.gguf',
+            local_dir='./models',
+            local_dir_use_symlinks=False
+        )
+        print('✅ Model downloaded successfully')
+        "
+      env:
+        HF_HUB_DISABLE_PROGRESS_BARS: 1
+    
+    - name: ✅ Verify model download
+      run: |
+        echo "Checking model file..."
+        if [ ! -f "models/mistral-7b-instruct-v0.1.Q4_K_M.gguf" ]; then
+          echo "❌ Model file not found!"
+          exit 1
+        fi
+        echo "✅ Model file exists"
+        echo "📊 Model size: $(ls -lh models/mistral-7b-instruct-v0.1.Q4_K_M.gguf | awk '{print $5}')"
+    
+    - name: 📊 Check existing processed URLs
+      run: |
+        echo "Checking for previously processed topics articles..."
+        if [ -f "topics_processed_urls.json" ]; then
+          url_count=$(jq '. | length' topics_processed_urls.json 2>/dev/null || echo "0")
+          echo "📰 Found $url_count previously processed topics URLs"
+          echo "🔍 Sample of processed URLs:"
+          jq -r '.[:3][]' topics_processed_urls.json 2>/dev/null || echo "None"
+        else
+          echo "📝 No processed URLs file found - starting fresh"
+        fi
+    
+    - name: 📊 Run topics news digest generator
+      run: |
+        echo "════════════════════════════════════════"
+        echo "📊 Starting Topics News Digest Generation"
+        echo "════════════════════════════════════════"
+        echo ""
+        python3 topics_main.py
+        echo ""
+        echo "════════════════════════════════════════"
+        echo "✅ Topics News Digest Generation Complete"
+        echo "════════════════════════════════════════"
+    
+    - name: 📈 Show generation statistics
+      if: always()
+      run: |
+        echo "════════════════════════════════════════"
+        echo "📊 TOPICS DIGEST STATISTICS"
+        echo "════════════════════════════════════════"
+        
+        if [ -f "topics_processed_urls.json" ]; then
+          url_count=$(jq '. | length' topics_processed_urls.json 2>/dev/null || echo "0")
+          echo "📰 Total processed topics URLs: $url_count"
+          
+          # Show newly added URLs (last 10)
+          echo ""
+          echo "🆕 Recently processed topics articles:"
+          jq -r '.[-10:][]' topics_processed_urls.json 2>/dev/null | head -10 || echo "None"
+        else
+          echo "⚠️ No processed URLs file found"
+        fi
+        
+        echo ""
+        echo "════════════════════════════════════════"
+    
+    - name: 💾 Commit processed URLs
+      run: |
+        echo "Configuring git..."
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action Bot"
+        
+        echo "Staging changes..."
+        git add topics_processed_urls.json 2>/dev/null || true
+        
+        if ! git diff --staged --quiet; then
+          url_count=$(jq '. | length' topics_processed_urls.json 2>/dev/null || echo "0")
+          echo "Committing changes..."
+          git commit -m "📊 Topics news digest sent - $url_count total processed URLs [$(date '+%Y-%m-%d %H:%M UTC')]"
+          
+          echo "Pushing to repository..."
+          git push
+          echo "✅ Changes committed and pushed"
+        else
+          echo "📝 No changes to commit"
+        fi
+      if: always()
+    
+    - name: 📦 Upload artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: topics-digest-run-${{ github.run_number }}
+        path: |
+          topics_processed_urls.json
+        retention-days: 7
+    
+    - name: 📋 Run summary
+      if: always()
+      run: |
+        echo ""
+        echo "════════════════════════════════════════"
+        echo "📋 TOPICS WORKFLOW RUN SUMMARY"
+        echo "════════════════════════════════════════"
+        echo "📊 Workflow: ${{ github.workflow }}"
+        echo "📅 Run Number: ${{ github.run_number }}"
+        echo "⏰ Completed: $(date '+%Y-%m-%d %H:%M:%S UTC')"
+        echo "🌐 Repository: ${{ github.repository }}"
+        echo "🔗 Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        
+        if [ -f "topics_processed_urls.json" ]; then
+          url_count=$(jq '. | length' topics_processed_urls.json 2>/dev/null || echo "0")
+          echo ""
+          echo "📊 Statistics:"
+          echo "   • Total topics URLs processed: $url_count"
+          echo "   • Artifact uploaded: topics-digest-run-${{ github.run_number }}"
+        fi
+        
+        echo ""
+        echo "💡 Next scheduled run in ~8 hours"
+        echo "════════════════════════════════════════"
+    
+    - name: 🧹 Clean up
+      run: |
+        echo "Cleaning up large files to save space..."
+        rm -rf models/
+        echo "✅ Cleanup complete"
+      if: always()
