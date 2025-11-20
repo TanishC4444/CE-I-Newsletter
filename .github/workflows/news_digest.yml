@@ -71,9 +71,6 @@ jobs:
       run: python3 main.py
       env:
         MODEL_PATH: ./models/mistral-7b-instruct-v0.1.Q4_K_M.gguf
-        EMAIL_TO: tanishchauhan4444@gmail.com
-        EMAIL_FROM: tanishchauhan4444@gmail.com
-        EMAIL_PASSWORD: "sexz mqmo ygov axxp"
         
     - name: Commit processed URLs
       run: |

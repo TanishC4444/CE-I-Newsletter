@@ -9,19 +9,50 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from llama_cpp import Llama
 
-# Configuration
-MODEL_PATH = os.getenv('MODEL_PATH', './models/mistral-7b-instruct-v0.1.Q4_K_M.gguf')
+# Configuration - NO ENVIRONMENT VARIABLES
+MODEL_PATH = './models/mistral-7b-instruct-v0.1.Q4_K_M.gguf'
 PROCESSED_URLS_FILE = 'processed_urls.json'
-EMAIL_TO = os.getenv('EMAIL_TO', 'tanishchauhan4444@gmail.com')
-EMAIL_FROM = os.getenv('EMAIL_FROM', 'tanishchauhan4444@gmail.com')
-EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD', 'sexz mqmo ygov axxp')
+
+# Email Configuration - Add multiple recipients here
+EMAIL_RECIPIENTS = [
+    "tanishchauhan4444@gmail.com",
+    "lakshith.toguta@gmail.com",
+    # Add more emails here
+]
+EMAIL_FROM = "tanishchauhan4444@gmail.com"
+EMAIL_PASSWORD = "sexz mqmo ygov axxp"
 
 # RSS feeds organized by region
 FEEDS = {
     "US": {
         "CNN": "http://rss.cnn.com/rss/cnn_topstories.rss",
         "NPR": "https://feeds.npr.org/1001/rss.xml",
+        "Washington Post": "https://feeds.washingtonpost.com/rss/national",
+        "NY Times US": "https://rss.nytimes.com/services/xml/rss/nyt/US.xml",
     },
+    "World": {
+        "BBC World": "http://feeds.bbci.co.uk/world/rss.xml",
+        "NY World": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+        "Al Jazeera": "https://www.aljazeera.com/xml/rss/all.xml",
+    },
+    "Middle East": {
+        "NY Middle East": "https://rss.nytimes.com/services/xml/rss/nyt/MiddleEast.xml",
+    },
+    "Asia": {
+        "NY Asia Pacific": "https://rss.nytimes.com/services/xml/rss/nyt/AsiaPacific.xml",
+    },
+    "Europe": {
+        "NY Europe": "https://rss.nytimes.com/services/xml/rss/nyt/Europe.xml",
+    },
+    "Africa": {
+        "NY Africa": "https://rss.nytimes.com/services/xml/rss/nyt/Africa.xml",
+    },
+    "Business": {
+        "NY Business": "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",
+    },
+    "Technology": {
+        "NY Tech": "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
+    }
 }
 
 # Initialize AI model
@@ -48,6 +79,37 @@ Keep each point to 1-2 sentences maximum. Be specific and factual.
 Article: {article}
 
 Summary:"""
+
+QUIZ_PROMPT = """Based on the news articles provided, create 5 multiple choice questions to test comprehension.
+
+STRICT REQUIREMENTS:
+- Create exactly 5 questions covering different articles
+- Each question must have exactly 4 options (A, B, C, D)
+- Each question must have exactly 1 correct answer
+- Questions should test factual recall from the articles
+- Include a mix of WHO, WHAT, WHEN, WHERE, WHY questions
+
+FORMAT (follow exactly):
+Q1. [Question about article content]
+A. [Option A]
+B. [Option B]
+C. [Option C]
+D. [Option D]
+Correct Answer: [Single letter: A, B, C, or D]
+
+Q2. [Question about article content]
+A. [Option A]
+B. [Option B]
+C. [Option C]
+D. [Option D]
+Correct Answer: [Single letter: A, B, C, or D]
+
+[Continue for Q3, Q4, Q5...]
+
+Articles Summary:
+{articles_summary}
+
+Generate exactly 5 questions now:"""
 
 def load_processed_urls():
     """Load set of already processed URLs"""
@@ -135,8 +197,63 @@ def summarize_article(article_text):
         print(f"Error summarizing: {e}")
         return None
 
-def create_html_email(articles_by_region):
-    """Create beautiful HTML email with summaries"""
+def generate_quiz(articles_by_region):
+    """Generate quiz questions based on all articles"""
+    try:
+        # Prepare summary of all articles for quiz generation
+        articles_summary = ""
+        for region, articles in articles_by_region.items():
+            for article in articles:
+                if article.get('summary'):
+                    articles_summary += f"\nArticle: {article['title']}\n{article['summary']}\n"
+        
+        # Limit length to avoid context issues
+        articles_summary = articles_summary[:4000]
+        
+        prompt = QUIZ_PROMPT.format(articles_summary=articles_summary)
+        
+        response = llm(
+            prompt,
+            max_tokens=800,
+            temperature=0.3,
+            top_p=0.9,
+            stop=["Articles Summary:", "\n\nHere"],
+            echo=False
+        )
+        
+        quiz_text = response['choices'][0]['text'].strip()
+        
+        # Parse the quiz into structured format
+        questions = []
+        current_q = {}
+        
+        for line in quiz_text.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+                
+            if line.startswith('Q') and '.' in line:
+                if current_q:
+                    questions.append(current_q)
+                current_q = {'question': line, 'options': [], 'answer': ''}
+            elif line.startswith(('A.', 'B.', 'C.', 'D.')):
+                if current_q:
+                    current_q['options'].append(line)
+            elif line.startswith('Correct Answer:'):
+                if current_q:
+                    current_q['answer'] = line.split(':')[1].strip()
+        
+        if current_q:
+            questions.append(current_q)
+        
+        return questions
+        
+    except Exception as e:
+        print(f"Error generating quiz: {e}")
+        return []
+
+def create_html_email(articles_by_region, quiz_questions):
+    """Create beautiful HTML email with summaries and quiz"""
     
     # Color scheme by region
     region_colors = {
@@ -237,6 +354,60 @@ def create_html_email(articles_by_region):
                 font-weight: 600;
                 color: #374151;
             }}
+            .quiz-section {{
+                background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+                border-radius: 12px;
+                padding: 30px;
+                margin-top: 40px;
+                margin-bottom: 30px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }}
+            .quiz-header {{
+                font-size: 28px;
+                font-weight: bold;
+                color: white;
+                text-align: center;
+                margin-bottom: 10px;
+            }}
+            .quiz-subtitle {{
+                font-size: 16px;
+                color: rgba(255,255,255,0.9);
+                text-align: center;
+                margin-bottom: 25px;
+            }}
+            .quiz-question {{
+                background: white;
+                border-radius: 10px;
+                padding: 20px;
+                margin-bottom: 20px;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            }}
+            .question-text {{
+                font-size: 17px;
+                font-weight: 600;
+                color: #111827;
+                margin-bottom: 15px;
+                line-height: 1.5;
+            }}
+            .option {{
+                background: #f9fafb;
+                padding: 12px 15px;
+                margin: 8px 0;
+                border-radius: 6px;
+                font-size: 15px;
+                border-left: 3px solid #e5e7eb;
+                transition: all 0.2s;
+            }}
+            .answer {{
+                background: #dcfce7;
+                padding: 12px 15px;
+                margin-top: 12px;
+                border-radius: 6px;
+                border-left: 3px solid #22c55e;
+                font-size: 14px;
+                font-weight: 600;
+                color: #166534;
+            }}
             .footer {{
                 text-align: center;
                 color: #6b7280;
@@ -254,6 +425,7 @@ def create_html_email(articles_by_region):
         </div>
     """
     
+    # Add articles by region
     for region, articles in articles_by_region.items():
         if not articles:
             continue
@@ -288,6 +460,30 @@ def create_html_email(articles_by_region):
         
         html += '</div>'
     
+    # Add quiz section
+    if quiz_questions:
+        html += """
+        <div class="quiz-section">
+            <div class="quiz-header">🎯 Test Your Knowledge!</div>
+            <div class="quiz-subtitle">How well did you read today's news? Try these questions!</div>
+        """
+        
+        for i, q in enumerate(quiz_questions, 1):
+            html += f"""
+            <div class="quiz-question">
+                <div class="question-text">{q['question']}</div>
+            """
+            
+            for option in q['options']:
+                html += f'<div class="option">{option}</div>'
+            
+            if q.get('answer'):
+                html += f'<div class="answer">✅ Correct Answer: {q["answer"]}</div>'
+            
+            html += '</div>'
+        
+        html += '</div>'
+    
     html += """
         <div class="footer">
             <p>Generated automatically every 4 hours • Powered by AI</p>
@@ -299,26 +495,42 @@ def create_html_email(articles_by_region):
     return html
 
 def send_email(html_content, article_count):
-    """Send HTML email via Gmail"""
-    try:
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = f'📰 News Digest - {article_count} New Articles - {datetime.now().strftime("%b %d, %Y")}'
-        msg['From'] = EMAIL_FROM
-        msg['To'] = EMAIL_TO
-        
-        html_part = MIMEText(html_content, 'html')
-        msg.attach(html_part)
-        
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-            server.login(EMAIL_FROM, EMAIL_PASSWORD)
-            server.send_message(msg)
-        
-        print(f"✅ Email sent successfully to {EMAIL_TO}")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Failed to send email: {e}")
-        return False
+    """Send HTML email via Gmail to multiple recipients"""
+    success_count = 0
+    
+    for recipient in EMAIL_RECIPIENTS:
+        try:
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = f'📰 News Digest - {article_count} New Articles - {datetime.now().strftime("%b %d, %Y")}'
+            msg['From'] = EMAIL_FROM
+            msg['To'] = recipient
+            
+            # Add plain text fallback
+            plain_text = f"News Digest - {article_count} New Articles\n\nPlease view this email in an HTML-compatible email client."
+            text_part = MIMEText(plain_text, 'plain')
+            msg.attach(text_part)
+            
+            # Add HTML content
+            html_part = MIMEText(html_content, 'html')
+            msg.attach(html_part)
+            
+            # Use SMTP with STARTTLS (port 587)
+            with smtplib.SMTP('smtp.gmail.com', 587) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(EMAIL_FROM, EMAIL_PASSWORD)
+                server.sendmail(EMAIL_FROM, recipient, msg.as_string())
+            
+            print(f"✅ Email sent successfully to {recipient}")
+            success_count += 1
+            sleep(1)  # Small delay between sends
+            
+        except Exception as e:
+            print(f"❌ Failed to send email to {recipient}: {e}")
+    
+    print(f"\n📧 Sent to {success_count}/{len(EMAIL_RECIPIENTS)} recipients")
+    return success_count > 0
 
 def main():
     """Main function to run the digest system"""
@@ -353,11 +565,19 @@ def main():
             articles_by_region[region] = []
         articles_by_region[region].append(article)
     
-    # Step 4: Create and send email
-    print(f"\n📧 Creating email...")
-    html = create_html_email(articles_by_region)
+    # Step 4: Generate quiz questions
+    print(f"\n🎯 Generating quiz questions...")
+    quiz_questions = generate_quiz(articles_by_region)
+    if quiz_questions:
+        print(f"  ✅ Generated {len(quiz_questions)} quiz questions")
+    else:
+        print(f"  ⚠️ Quiz generation failed")
     
-    print(f"📤 Sending email...")
+    # Step 5: Create and send email
+    print(f"\n📧 Creating email...")
+    html = create_html_email(articles_by_region, quiz_questions)
+    
+    print(f"📤 Sending email to {len(EMAIL_RECIPIENTS)} recipients...")
     send_email(html, len(articles))
     
     print(f"\n✅ Complete! Processed {len(articles)} articles")
