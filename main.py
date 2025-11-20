@@ -16,7 +16,7 @@ PROCESSED_URLS_FILE = 'processed_urls.json'
 # Email Configuration - Add multiple recipients here
 EMAIL_RECIPIENTS = [
     "tanishchauhan4444@gmail.com",
-    "lakshith.toguta@gmail.com",
+    "arth.singh863@gmail.com",
     # Add more emails here
 ]
 EMAIL_FROM = "tanishchauhan4444@gmail.com"
@@ -25,33 +25,15 @@ EMAIL_PASSWORD = "sexz mqmo ygov axxp"
 # RSS feeds organized by region
 FEEDS = {
     "US": {
-        "CNN": "http://rss.cnn.com/rss/cnn_topstories.rss",
         "NPR": "https://feeds.npr.org/1001/rss.xml",
+        "CNN": "http://rss.cnn.com/rss/cnn_topstories.rss",
+        "PBS NewsHour": "https://www.pbs.org/newshour/feeds/rss/headlines",
         "Washington Post": "https://feeds.washingtonpost.com/rss/national",
-        "NY Times US": "https://rss.nytimes.com/services/xml/rss/nyt/US.xml",
-    },
-    "World": {
-        "BBC World": "http://feeds.bbci.co.uk/world/rss.xml",
-        "NY World": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
-        "Al Jazeera": "https://www.aljazeera.com/xml/rss/all.xml",
-    },
-    "Middle East": {
-        "NY Middle East": "https://rss.nytimes.com/services/xml/rss/nyt/MiddleEast.xml",
-    },
-    "Asia": {
-        "NY Asia Pacific": "https://rss.nytimes.com/services/xml/rss/nyt/AsiaPacific.xml",
-    },
-    "Europe": {
-        "NY Europe": "https://rss.nytimes.com/services/xml/rss/nyt/Europe.xml",
-    },
-    "Africa": {
-        "NY Africa": "https://rss.nytimes.com/services/xml/rss/nyt/Africa.xml",
-    },
-    "Business": {
-        "NY Business": "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",
-    },
-    "Technology": {
-        "NY Tech": "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
+        "NY Times": "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
+        "ABC US Headlines": "https://feeds.abcnews.com/abcnews/usheadlines",
+        "CNBC Top News": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114", 
+        "CNBC US News": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=15837362", 
+        "The Hill": "https://thehill.com/homenews/feed/"
     }
 }
 
@@ -127,6 +109,7 @@ def collect_articles():
     """Collect new articles from RSS feeds"""
     processed_urls = load_processed_urls()
     new_articles = []
+    skipped_count = 0
     
     print(f"Loaded {len(processed_urls)} previously processed URLs")
     
@@ -148,16 +131,32 @@ def collect_articles():
                         article.download()
                         article.parse()
                         
-                        if len(article.text.split()) > 100:
-                            new_articles.append({
-                                'region': region,
-                                'source': feed_name,
-                                'title': entry.title,
-                                'url': url,
-                                'text': article.text[:3000]  # Limit length
-                            })
+                        # More strict content validation
+                        word_count = len(article.text.split())
+                        
+                        # Skip articles that are too short (less than 100 words)
+                        if word_count < 100:
+                            print(f"  ⏭️  Skipped (too short: {word_count} words): {entry.title[:50]}...")
+                            skipped_count += 1
+                            processed_urls.add(url)  # Mark as processed so we don't retry
+                            continue
+                        
+                        # Skip articles with very little actual content
+                        if len(article.text.strip()) < 200:  # Less than 200 characters
+                            print(f"  ⏭️  Skipped (minimal content): {entry.title[:50]}...")
+                            skipped_count += 1
                             processed_urls.add(url)
-                            print(f"  ✅ {feed_name}: {entry.title[:60]}...")
+                            continue
+                        
+                        new_articles.append({
+                            'region': region,
+                            'source': feed_name,
+                            'title': entry.title,
+                            'url': url,
+                            'text': article.text[:3000]  # Limit length
+                        })
+                        processed_urls.add(url)
+                        print(f"  ✅ {feed_name}: {entry.title[:60]}... ({word_count} words)")
                         
                     except Exception as e:
                         print(f"  ❌ Failed to fetch article: {e}")
@@ -168,7 +167,7 @@ def collect_articles():
                 print(f"  ❌ Failed to process {feed_name}: {e}")
     
     save_processed_urls(processed_urls)
-    print(f"\n✅ Collected {len(new_articles)} new articles")
+    print(f"\n✅ Collected {len(new_articles)} new articles (skipped {skipped_count} short/empty articles)")
     return new_articles
 
 def summarize_article(article_text):
