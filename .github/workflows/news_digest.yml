@@ -8,7 +8,7 @@ on:
 jobs:
   send-digest:
     runs-on: ubuntu-latest
-    timeout-minutes: 55 # Just under 1 hour limit
+    timeout-minutes: 1000 # Just under 1 hour limit
     
     steps:
     - name: 📦 Checkout repository
@@ -129,6 +129,15 @@ jobs:
         
         echo ""
         echo "════════════════════════════════════════"
+
+    - name: 🔄 Pull latest changes
+      run: |
+        echo "Pulling latest changes from remote..."
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action Bot"
+        git pull --rebase origin ${{ github.ref_name }}
+        echo "✅ Repository updated"
+      if: always()
     
     - name: 💾 Commit processed URLs
       run: |

@@ -204,7 +204,7 @@ def generate_quiz(articles_by_region):
         
         response = llm(
             prompt,
-            max_tokens=800,
+            max_tokens=500,
             temperature=0.3,
             top_p=0.9,
             stop=["Articles Summary:", "\n\nHere"],

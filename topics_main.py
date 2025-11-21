@@ -27,30 +27,26 @@ FEEDS = {
         "The Hill Politics": "https://thehill.com/homenews/administration/feed/",
         "NPR Politics": "https://feeds.npr.org/1014/rss.xml",
         "CNN Politics": "http://rss.cnn.com/rss/cnn_allpolitics.rss",
+        "ABC Politics": "https://feeds.abcnews.com/abcnews/politicsheadlines",
+        "CNBC Politics": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000113"
     },
     "Business & Economy": {
         "Wall Street Journal": "https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml",
         "Financial Times": "https://www.ft.com/?format=rss",
         "CNBC Business": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10001147",
         "MarketWatch": "http://feeds.marketwatch.com/marketwatch/topstories/",
+        "ABC Business": "https://feeds.abcnews.com/abcnews/businessheadlines",
+        "CNBC Business": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10001147"
     },
     "Health & Medicine": {
         "NPR Health": "https://feeds.npr.org/1128/rss.xml",
-        "ScienceDaily Health": "https://www.sciencedaily.com/rss/health_medicine.xml",
-    },
-    "Environment & Climate": {
-        "The Guardian Environment": "https://www.theguardian.com/environment/rss",
-        "Inside Climate News": "https://insideclimatenews.org/feed/",
+        "ABC Health": "https://feeds.abcnews.com/abcnews/healthheadlines",
+        "CNBC Health": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000108"
     },
     "Technology": {
-        "TechCrunch": "https://techcrunch.com/feed/",
-        "MIT Technology Review": "https://www.technologyreview.com/feed/",
-    },
-    "Science": {
-        "Science Daily": "https://www.sciencedaily.com/rss/all.xml",
-        "Nature News": "http://feeds.nature.com/nature/rss/current",
-        "Scientific American": "http://rss.sciam.com/ScientificAmerican-Global",
-        "Phys.org": "https://phys.org/rss-feed/",
+        "ABC Tech": "https://feeds.abcnews.com/abcnews/technologyheadlines",
+        "CNBC Tech": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=19854910",
+        "MIT Technology Review": "https://www.technologyreview.com/feed/"
     }
 }
 
@@ -225,7 +221,7 @@ def generate_quiz(articles_by_region):
         
         response = llm(
             prompt,
-            max_tokens=800,
+            max_tokens=500,
             temperature=0.3,
             top_p=0.9,
             stop=["Articles Summary:", "\n\nHere"],
