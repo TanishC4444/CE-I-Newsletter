@@ -132,10 +132,19 @@ jobs:
     
     - name: 🔄 Pull latest changes
       run: |
-        echo "Pulling latest changes from remote..."
+        echo "Configuring git..."
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action Bot"
+        
+        echo "Stashing local changes..."
+        git stash push -u -m "Temporary stash before pull"
+        
+        echo "Pulling latest changes from remote..."
         git pull --rebase origin ${{ github.ref_name }}
+        
+        echo "Reapplying local changes..."
+        git stash pop || echo "No stash to pop or conflict - continuing..."
+        
         echo "✅ Repository updated"
       if: always()
     
