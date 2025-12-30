@@ -15,7 +15,7 @@ PROCESSED_URLS_FILE = 'intl_processed_urls.json'
 
 # Email Configuration
 EMAIL_RECIPIENTS = [
-    "tanishchauhan4444@gmail.com",
+    "tanishc4444@gmail.com",
     "lakshith.toguta@gmail.com"
 ]
 EMAIL_FROM = "tanishchauhan4444@gmail.com"
