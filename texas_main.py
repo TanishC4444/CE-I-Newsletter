@@ -16,7 +16,9 @@ PROCESSED_URLS_FILE = 'texas_processed_urls.json'
 # Email Configuration
 EMAIL_RECIPIENTS = [
     "tanishc4444@gmail.com",
-    "lakshith.toguta@gmail.com"
+    "lakshith.toguta@gmail.com",
+    "patildhruv97@gmail.com",
+    "emilyzhang8849@gmail.com"
 ]
 EMAIL_FROM = "tanishchauhan4444@gmail.com"
 EMAIL_PASSWORD = "sexz mqmo ygov axxp"
