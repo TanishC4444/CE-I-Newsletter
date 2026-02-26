@@ -16,7 +16,9 @@ PROCESSED_URLS_FILE = 'processed_urls.json'
 # Email Configuration - Add multiple recipients here
 EMAIL_RECIPIENTS = [
     "tanishc4444@gmail.com",
-    "lakshith.toguta@gmail.com"
+    "lakshith.toguta@gmail.com",
+    "patildhruv97@gmail.com",
+    "emilyzhang8849@gmail.com"
     # Add more emails here
 ]
 EMAIL_FROM = "tanishchauhan4444@gmail.com"
