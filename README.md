@@ -21,8 +21,6 @@ CE-I Newsletter is a family of four independent news-intelligence pipelines: gen
 
 Each product owns a separate processed-URL file and GitHub Actions schedule, allowing its editorial scope and cadence to evolve independently.
 
-> [!CAUTION]
-> The current source contains hard-coded Gmail credentials and recipient addresses. Rotate the exposed app password, remove credentials from git history, and migrate all delivery settings to environment variables or GitHub Secrets before running or showcasing this as deployable software.
 
 ## System design
 
