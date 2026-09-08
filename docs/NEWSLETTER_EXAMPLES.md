@@ -25,7 +25,7 @@ This is a strong example of the five-part briefing format: it identifies the air
 
 **Why this story matters:** the underlying event affected real airline operations. Airbus's [November 28 statement](https://www.airbus.com/en/newsroom/press-releases/2025-11-airbus-update-on-a320-family-precautionary-fleet-action) confirms precautionary action after identifying a risk that intense solar radiation could corrupt flight-control data. AirAsia [confirmed completion of the required software rollback on November 30](https://newsroom.airasia.com/news/airasia-has-completed-easa-mandated-requirements-operations-back-to-normal).
 
-**Verification boundary:** those primary sources confirm the event and operational response, not every airline named in the generated summary. The [original ABC link](https://abcnews.go.com/US/wireStory/airlines-work-fix-software-glitch-a320-aircraft-flights-127959850) returned a retrieval error during review. The email's generic “software update” description should be read alongside the operator's more specific rollback explanation.
+**Read the source:** [Airbus — A320 Family precautionary fleet action, November 28, 2025](https://www.airbus.com/en/newsroom/press-releases/2025-11-airbus-update-on-a320-family-precautionary-fleet-action). This working manufacturer source replaces the unavailable ABC article link. The screenshot preserves the original email and its ABC attribution. Airbus and AirAsia confirm the event and operational response; they do not verify every airline named in the generated summary. AirAsia specifically describes a software rollback.
 
 ## 2. International News Digest — Honduras election
 
