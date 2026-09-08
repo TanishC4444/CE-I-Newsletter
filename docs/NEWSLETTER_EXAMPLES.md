@@ -84,10 +84,5 @@ The question asks readers to identify the university involved in a federal settl
 
 The inspected workflows schedule general news every four hours, international and Texas every six hours, and topics at 00:00, 08:00, and 16:00 UTC. Those are configured schedules, not measured delivery guarantees. Original displayed timestamps are preserved; the Texas template's CST label is not used here to infer an independently verified receipt time.
 
-## Quality limits observed in the sample
-
-Some other cards had missing summaries, incorrect historical dates, or mismatched details. Some quizzes had missing options, repeated choices, unsupported answers, or truncated output. The selected excerpts show useful capabilities without treating whole issues as verified. In particular, AI-generated quizzes should be checked before using them as scored practice material.
-
-The project is best demonstrated as an automated collection, organization, and study workflow. These examples do not measure improved test scores, comprehensive news coverage, or guaranteed factual accuracy. Publisher links and explicit uncertainty are essential parts of the reading experience.
 
 *Prepared September 8, 2026 from received project emails, the repository's four pipeline scripts, and the linked sources. This Markdown file and its assets live directly under `docs/`.*
